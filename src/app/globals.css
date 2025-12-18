@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --brand-gold: #c5a25a; /* gold accent */
+  --brand-dark: #111111; /* near-black */
+  --brand-gray: #1f2937; /* slate-800 */
+  --brand-border: #e5e7eb; /* gray-200 */
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+.container {
+  @apply max-w-6xl mx-auto px-4;
+}
+
+/* Brand utilities */
+.brand-gradient {
+  background: radial-gradient(1200px 600px at 10% -20%, rgba(197,162,90,0.2), transparent),
+              radial-gradient(800px 400px at 90% -20%, rgba(17,17,17,0.08), transparent);
+}
+
+/* Buttons */
+.btn {
+  @apply inline-flex items-center justify-center rounded px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
+}
+.btn-sm { @apply px-2 py-1 text-xs; }
+.btn-gold {
+  background-color: var(--brand-gold);
+  color: #111;
+}
+.btn-gold:hover { filter: brightness(0.95); }
+
+.btn-dark {
+  background-color: var(--brand-dark);
+  color: #fff;
+}
+.btn-dark:hover { filter: brightness(1.1); }
+
+.btn-outline {
+  @apply border;
+  border-color: var(--brand-border);
+  color: var(--brand-gray);
+  background: #fff;
+}
+.btn-outline:hover { background: #f9fafb; }
+
+.btn-danger { @apply border border-red-300 text-red-700 bg-red-50; }
+.btn-danger:hover { @apply bg-red-100; }
+
+/* Cards */
+.card { @apply bg-white border rounded; border-color: var(--brand-border); }
+.card-header { @apply px-4 py-2 border-b; border-color: var(--brand-border); }
+.card-body { @apply p-4; }
+
+/* Links */
+.link { color: var(--brand-gold); }
+.link:hover { text-decoration: underline; }
+
+/* Responsive helpers */
+.table-responsive {
+  /* On small screens, allow horizontal scroll, with breathing space */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive > table {
+  min-width: 640px; /* prevent columns from squashing too much */
+}
+
+/* Subtle scrollbar styling (optional) */
+.table-responsive::-webkit-scrollbar { height: 8px; }
+.table-responsive::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+.table-responsive::-webkit-scrollbar-track { background: transparent; }
