@@ -19,7 +19,6 @@ function ensureAdmin(): SupabaseClient {
 export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
   get(_target, prop, receiver) {
     const client = ensureAdmin()
-    // @ts-expect-error dynamic property access passthrough
     const value = (client as any)[prop]
     return typeof value === 'function' ? value.bind(client) : value
   },
