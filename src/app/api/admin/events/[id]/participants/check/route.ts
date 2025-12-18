@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: any) {
+  const { params } = (context || {}) as { params: { id: string } }
   const eventId = params.id
   const { searchParams } = new URL(req.url)
   const code = (searchParams.get('code') || '').trim()

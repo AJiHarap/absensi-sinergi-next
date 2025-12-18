@@ -4,8 +4,9 @@ import { supabaseAdmin } from '@/lib/supabase/server'
 
 const PatchSchema = z.object({ is_active: z.boolean() })
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: any) {
   try {
+    const { params } = (context || {}) as { params: { id: string } }
     const body = PatchSchema.parse(await req.json())
     const { error } = await supabaseAdmin
       .from('events')

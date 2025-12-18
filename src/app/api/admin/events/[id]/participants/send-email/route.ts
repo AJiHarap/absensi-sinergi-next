@@ -15,11 +15,12 @@ Body JSON: { participantIds?: string[] }
 Sends each participant an email with their QR (PNG attachment) and instructions.
 This is a simple sequential sender; for many recipients you can extend to batching/queue later.
 */
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: any) {
   try {
     if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
       throw new Error('GMAIL_USER/GMAIL_PASS belum dikonfigurasi di .env')
     }
+    const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
     const body = await req.json().catch(() => ({})) as { participantIds?: string[] }
 

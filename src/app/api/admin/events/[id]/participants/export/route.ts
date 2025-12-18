@@ -14,7 +14,8 @@ function toCsvRow(fields: (string | number | null | undefined)[]) {
     .join(',')
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, context: any) {
+  const { params } = (context || {}) as { params: { id: string } }
   const eventId = params.id
 
   const { data, error } = await supabaseAdmin

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: any) {
   try {
+    const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
 
     const contentType = req.headers.get('content-type') || ''

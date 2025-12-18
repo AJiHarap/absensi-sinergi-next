@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/server'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, context: any) {
+  const { params } = (context || {}) as { params: { id: string } }
   const eventId = params.id
   // List seats with optional assignment + participant info
   const { data, error } = await supabaseAdmin
@@ -42,8 +43,9 @@ const CreateSchema = z.object({
 
 type Body = z.infer<typeof GenerateSchema> | z.infer<typeof CreateSchema>
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: any) {
   try {
+    const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
     const json = (await req.json()) as Body
 

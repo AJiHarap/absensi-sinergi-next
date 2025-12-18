@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { z } from 'zod'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: any) {
+  const { params } = (context || {}) as { params: { id: string } }
   const eventId = params.id
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') || '').trim()
@@ -92,8 +93,9 @@ const PostSchema = z.object({
   gender: z.enum(['L', 'P']).nullable().optional(), // L = Laki-laki, P = Perempuan
 })
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: any) {
   try {
+    const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
     const { full_name, participant_code, email, phone, gender } = PostSchema.parse(await req.json())
 
