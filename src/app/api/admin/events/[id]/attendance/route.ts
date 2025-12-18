@@ -22,8 +22,9 @@ const QuerySchema = z.object({
   to: z.string().optional(),   // ISO date (YYYY-MM-DD) or ISO datetime
 })
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: any) {
   try {
+    const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
     const { searchParams } = new URL(req.url)
     const parsed = QuerySchema.safeParse(Object.fromEntries(searchParams))
