@@ -9,7 +9,15 @@ function ensureAdmin(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
-    throw new Error('supabaseUrl is required.')
+    // Return a lazy dummy client that throws only when a method is invoked.
+    _admin = new Proxy({} as SupabaseClient, {
+      get() {
+        return () => {
+          throw new Error('supabaseUrl is required.')
+        }
+      },
+    })
+    return _admin
   }
   _admin = createClient(url, key, { auth: { persistSession: false } })
   return _admin
