@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, context: any) {
     // Detect Excel vs CSV
     const lowerName = (file.name || '').toLowerCase()
     const isExcel = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || /sheet|excel/i.test(file.type || '')
-    type Row = { full_name: string; participant_code?: string; email?: string; phone?: string; gender?: string }
+    type Row = { full_name: string; participant_code?: string; email?: string; phone?: string; gender?: string; jabatan?: string; divisi?: string; asal?: string; tanggal_lahir?: string }
     const rows: Row[] = []
 
     if (isExcel) {
@@ -38,6 +38,10 @@ export async function POST(req: NextRequest, context: any) {
             email: (r.email || '').toString().trim(),
             phone: (r.phone || '').toString().trim(),
             gender: (r.gender || '').toString().trim(),
+            jabatan: (r.jabatan || r['Jabatan'] || '').toString().trim(),
+            divisi: (r.divisi || r['Divisi'] || '').toString().trim(),
+            asal: (r.asal || r['Asal'] || '').toString().trim(),
+            tanggal_lahir: (r.tanggal_lahir || r['Tanggal Lahir'] || r['tgl_lahir'] || '').toString().trim(),
           })
         }
       } catch (e: any) {
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest, context: any) {
       }
     } else {
       const text = await file.text()
-      // Very simple CSV parser (comma-separated, RFC4180-light). Expect header row with: full_name,participant_code,email,phone,gender
+      // Very simple CSV parser (comma-separated, RFC4180-light). Expect header row with: full_name,participant_code,email,phone,gender,jabatan,divisi,asal,tanggal_lahir
       const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0)
       if (lines.length === 0) return NextResponse.json({ ok: false, message: 'CSV kosong' }, { status: 400 })
       const header = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''))
@@ -55,6 +59,10 @@ export async function POST(req: NextRequest, context: any) {
         email: header.findIndex((h) => h.toLowerCase() === 'email'),
         phone: header.findIndex((h) => h.toLowerCase() === 'phone'),
         gender: header.findIndex((h) => h.toLowerCase() === 'gender'),
+        jabatan: header.findIndex((h) => h.toLowerCase() === 'jabatan'),
+        divisi: header.findIndex((h) => h.toLowerCase() === 'divisi'),
+        asal: header.findIndex((h) => h.toLowerCase() === 'asal'),
+        tanggal_lahir: header.findIndex((h) => h.toLowerCase() === 'tanggal_lahir'),
       }
       if (idx.full_name < 0) return NextResponse.json({ ok: false, message: 'Kolom full_name wajib ada' }, { status: 400 })
       for (let i = 1; i < lines.length; i++) {
@@ -67,6 +75,10 @@ export async function POST(req: NextRequest, context: any) {
           email: idx.email >= 0 ? getVal(cols, idx.email) : '',
           phone: idx.phone >= 0 ? getVal(cols, idx.phone) : '',
           gender: idx.gender >= 0 ? getVal(cols, idx.gender) : '',
+          jabatan: idx.jabatan >= 0 ? getVal(cols, idx.jabatan) : '',
+          divisi: idx.divisi >= 0 ? getVal(cols, idx.divisi) : '',
+          asal: idx.asal >= 0 ? getVal(cols, idx.asal) : '',
+          tanggal_lahir: idx.tanggal_lahir >= 0 ? getVal(cols, idx.tanggal_lahir) : '',
         })
       }
     }
@@ -99,6 +111,10 @@ export async function POST(req: NextRequest, context: any) {
       const email = (r.email || '').trim()
       const phone = (r.phone || '').trim()
       const gender = (r.gender || '').trim()
+      const jabatan = (r.jabatan || '').trim()
+      const divisi = (r.divisi || '').trim()
+      const asal = (r.asal || '').trim()
+      const tanggal_lahir = (r.tanggal_lahir || '').trim()
       if (!full_name) { failed++; errors.push({ line: i + 2, message: 'full_name kosong' }); continue }
 
       const initials = full_name.trim().toUpperCase().split(/\s+/).map(p => p[0]).join('').slice(0, 2) || 'P'
@@ -126,7 +142,15 @@ export async function POST(req: NextRequest, context: any) {
               participant_code: finalCode,
               email: email || null,
               phone: phone || null,
-              metadata: gender ? { gender } : undefined,
+              metadata: (() => {
+                const m: any = {}
+                if (gender) m.gender = gender
+                if (jabatan) m.jabatan = jabatan
+                if (divisi) m.divisi = divisi
+                if (asal) m.asal = asal
+                if (tanggal_lahir) m.tanggal_lahir = tanggal_lahir
+                return Object.keys(m).length ? m : undefined
+              })(),
             }],
             { onConflict: 'event_id,participant_code' }
           )

@@ -11,6 +11,13 @@ type Row = {
   table_number: number | null
   seat_number: number | null
   is_first?: boolean
+  order_index?: number
+  email?: string
+  phone?: string
+  gender?: string
+  jabatan?: string
+  divisi?: string
+  asal?: string
 }
 
 export default function AttendancePage() {
@@ -93,7 +100,28 @@ export default function AttendancePage() {
       <section className="card p-4 grid sm:grid-cols-5 gap-3 items-end">
         <div className="sm:col-span-2">
           <label className="text-sm text-gray-700">Cari</label>
-          <input className="w-full border rounded px-3 py-2" placeholder="Nama atau kode peserta" value={q} onChange={(e) => { setPage(1); setQ(e.target.value) }} />
+          <input className="w-full border rounded px-3 py-2" placeholder="Nama/kode peserta atau urutan: 'pertama', 'kedua', 'ketiga' atau 'order:2'" value={q} onChange={(e) => { setPage(1); setQ(e.target.value) }} />
+        </div>
+        <div>
+          <label className="text-sm text-gray-700">Urutan Scan</label>
+          <select
+            className="w-full border rounded px-3 py-2"
+            onChange={(e) => {
+              const n = Number(e.target.value)
+              setPage(1)
+              if (!n) {
+                setQ('')
+              } else {
+                setQ(`order:${n}`)
+              }
+            }}
+            defaultValue={0}
+          >
+            <option value={0}>Semua</option>
+            {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>{n === 1 ? 'Pertama' : `Ke-${n}`}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="text-sm text-gray-700">Urutkan</label>
@@ -118,24 +146,28 @@ export default function AttendancePage() {
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/attendance?export=csv&sort=${sort}&page=1&pageSize=100000${q ? `&q=${encodeURIComponent(q)}` : ''}${fromDate ? `&from=${encodeURIComponent(fromDate)}` : ''}${toDate ? `&to=${encodeURIComponent(toDate)}` : ''}${noSeat ? `&noSeat=true` : ''}`}
+            download
           >
             Export CSV (sesuai filter)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/attendance?export=excel&sort=${sort}&page=1&pageSize=100000${q ? `&q=${encodeURIComponent(q)}` : ''}${fromDate ? `&from=${encodeURIComponent(fromDate)}` : ''}${toDate ? `&to=${encodeURIComponent(toDate)}` : ''}${noSeat ? `&noSeat=true` : ''}`}
+            download
           >
             Export Excel (sesuai filter)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/attendance?export=csv&sort=${sort}&page=1&pageSize=100000`}
+            download
           >
             Export CSV (semua)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/attendance?export=excel&sort=${sort}&page=1&pageSize=100000`}
+            download
           >
             Export Excel (semua)
           </a>
@@ -166,6 +198,13 @@ export default function AttendancePage() {
               <th className="text-left p-3">Kode</th>
               <th className="text-left p-3">Meja</th>
               <th className="text-left p-3">Kursi</th>
+              <th className="text-left p-3">Urutan</th>
+              <th className="text-left p-3 hidden xl:table-cell">Email</th>
+              <th className="text-left p-3 hidden xl:table-cell">Telepon</th>
+              <th className="text-left p-3 hidden 2xl:table-cell">Gender</th>
+              <th className="text-left p-3 hidden 2xl:table-cell">Jabatan</th>
+              <th className="text-left p-3 hidden 2xl:table-cell">Divisi</th>
+              <th className="text-left p-3 hidden 2xl:table-cell">Asal</th>
             </tr>
           </thead>
           <tbody>
@@ -180,16 +219,21 @@ export default function AttendancePage() {
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <span>{r.participant_name}</span>
-                      {r.is_first ? (
-                        <span className="text-[10px] uppercase bg-green-100 text-green-700 border border-green-200 rounded px-1 py-0.5">Pertama</span>
-                      ) : (
-                        <span className="text-[10px] uppercase bg-yellow-100 text-yellow-700 border border-yellow-200 rounded px-1 py-0.5">Ulang</span>
-                      )}
+                      <span className={`text-[10px] uppercase border rounded px-1 py-0.5 ${r.order_index === 1 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}>
+                        {r.order_index === 1 ? 'Pertama' : `Ke-${r.order_index ?? 2}`}
+                      </span>
                     </div>
                   </td>
                   <td className="p-3 font-mono">{r.participant_code}</td>
                   <td className="p-3">{r.table_number ?? '-'}</td>
                   <td className="p-3">{r.seat_number ?? '-'}</td>
+                  <td className="p-3">{r.order_index ?? (r.is_first ? 1 : 2)}</td>
+                  <td className="p-3 hidden xl:table-cell">{r.email || '-'}</td>
+                  <td className="p-3 hidden xl:table-cell">{r.phone || '-'}</td>
+                  <td className="p-3 hidden 2xl:table-cell">{r.gender || '-'}</td>
+                  <td className="p-3 hidden 2xl:table-cell">{r.jabatan || '-'}</td>
+                  <td className="p-3 hidden 2xl:table-cell">{r.divisi || '-'}</td>
+                  <td className="p-3 hidden 2xl:table-cell">{r.asal || '-'}</td>
                 </tr>
               ))
             )}

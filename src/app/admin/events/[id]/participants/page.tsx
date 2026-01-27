@@ -14,7 +14,7 @@ type Participant = {
   email: string | null
   phone: string | null
   participant_code: string
-  metadata?: { gender?: 'L' | 'P' } | null
+  metadata?: { gender?: 'L' | 'P'; jabatan?: string | null; divisi?: string | null; asal?: string | null; tanggal_lahir?: string | null } | null
 }
 
 export default function ParticipantsPage() {
@@ -32,7 +32,7 @@ export default function ParticipantsPage() {
   const [sending, setSending] = useState<{ email?: boolean; pid?: string | null }>({})
 
   // add form
-  const [form, setForm] = useState({ full_name: '', participant_code: '', email: '', phone: '', gender: '' as '' | 'L' | 'P' })
+  const [form, setForm] = useState({ full_name: '', participant_code: '', email: '', phone: '', gender: '' as '' | 'L' | 'P', jabatan: '', divisi: '', asal: '', tanggal_lahir: '' })
   const [saving, setSaving] = useState(false)
   const [codeTouched, setCodeTouched] = useState(false)
 
@@ -45,7 +45,7 @@ export default function ParticipantsPage() {
 
   // edit modal
   const [editing, setEditing] = useState<null | Participant>(null)
-  const [editForm, setEditForm] = useState({ full_name: '', participant_code: '', email: '', phone: '', gender: '' as '' | 'L' | 'P' })
+  const [editForm, setEditForm] = useState({ full_name: '', participant_code: '', email: '', phone: '', gender: '' as '' | 'L' | 'P', jabatan: '', divisi: '', asal: '', tanggal_lahir: '' })
   const [updating, setUpdating] = useState(false)
 
   const load = async () => {
@@ -180,6 +180,10 @@ export default function ParticipantsPage() {
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         gender: form.gender || null,
+        jabatan: form.jabatan.trim() || null,
+        divisi: form.divisi.trim() || null,
+        asal: form.asal.trim() || null,
+        tanggal_lahir: form.tanggal_lahir.trim() || null,
       }
       const res = await fetch(`/api/admin/events/${eventId}/participants`, {
         method: 'POST',
@@ -188,7 +192,7 @@ export default function ParticipantsPage() {
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.message || 'Gagal menyimpan peserta')
-      setForm({ full_name: '', participant_code: '', email: '', phone: '', gender: '' })
+      setForm({ full_name: '', participant_code: '', email: '', phone: '', gender: '', jabatan: '', divisi: '', asal: '', tanggal_lahir: '' })
       setCodeTouched(false)
       // reload back to first page including new item in order
       setPage(1)
@@ -239,6 +243,10 @@ export default function ParticipantsPage() {
       email: p.email ?? '',
       phone: p.phone ?? '',
       gender: (p.metadata?.gender as any) || '',
+      jabatan: (p.metadata?.jabatan as any) || '',
+      divisi: (p.metadata?.divisi as any) || '',
+      asal: (p.metadata?.asal as any) || '',
+      tanggal_lahir: (p.metadata?.tanggal_lahir as any) || '',
     })
   }
 
@@ -261,6 +269,10 @@ export default function ParticipantsPage() {
         email: editForm.email.trim() || null,
         phone: editForm.phone.trim() || null,
         gender: editForm.gender || null,
+        jabatan: editForm.jabatan.trim() || null,
+        divisi: editForm.divisi.trim() || null,
+        asal: editForm.asal.trim() || null,
+        tanggal_lahir: editForm.tanggal_lahir.trim() || null,
       }
       const res = await fetch(`/api/admin/events/${eventId}/participants/${editing.id}`, {
         method: 'PATCH',
@@ -340,7 +352,7 @@ export default function ParticipantsPage() {
       <section className="card p-4 grid sm:grid-cols-3 gap-3 items-end">
         <div className="sm:col-span-2">
           <label className="text-sm text-gray-700">Cari</label>
-          <input className="w-full border rounded px-3 py-2" placeholder="Nama, kode, email, telepon" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="w-full border rounded px-3 py-2" placeholder="Nama, kode, email, telepon, jabatan, divisi, asal" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div>
           <label className="text-sm text-gray-700">Urutkan</label>
@@ -357,24 +369,28 @@ export default function ParticipantsPage() {
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/participants?export=csv${q ? `&q=${encodeURIComponent(q)}` : ''}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`}
+            download
           >
             Export CSV (sesuai filter)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/participants?export=excel${q ? `&q=${encodeURIComponent(q)}` : ''}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`}
+            download
           >
             Export Excel (sesuai filter)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/participants?export=csv${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`}
+            download
           >
             Export CSV (semua)
           </a>
           <a
             className="btn btn-outline"
             href={`/api/admin/events/${eventId}/participants?export=excel${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`}
+            download
           >
             Export Excel (semua)
           </a>
@@ -392,7 +408,7 @@ export default function ParticipantsPage() {
       {/* Import CSV/Excel */}
       <section className="card p-4">
         <div className="font-medium mb-2">Import Peserta via CSV / Excel</div>
-        <div className="text-xs text-gray-600 mb-2">Format kolom: <code>full_name, participant_code (opsional), email (opsional), phone (opsional), gender (opsional: L/P)</code>. Excel: gunakan header yang sama.</div>
+        <div className="text-xs text-gray-600 mb-2">Format kolom: <code>full_name, participant_code (opsional), email (opsional), phone (opsional), gender (opsional: L/P), jabatan (opsional), divisi (opsional), asal (opsional), tanggal_lahir (opsional)</code>. Excel: gunakan header yang sama.</div>
         <form
           className="flex flex-col sm:flex-row gap-2 items-start"
           onSubmit={async (e) => {
@@ -420,7 +436,7 @@ export default function ParticipantsPage() {
           <button type="submit" className="btn btn-outline">Upload</button>
           <a
             className="link text-sm"
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent('full_name,participant_code,email,phone,gender\n')}`}
+            href={`data:text/csv;charset=utf-8,${encodeURIComponent('full_name,participant_code,email,phone,gender,jabatan,divisi,asal,tanggal_lahir\n')}`}
             download={`participants_template.csv`}
           >
             Unduh Template CSV
@@ -472,6 +488,10 @@ export default function ParticipantsPage() {
               <option value="P">Perempuan</option>
             </select>
           </div>
+          <input className="border rounded px-3 py-2" placeholder="Jabatan (opsional)" value={form.jabatan} onChange={(e) => setForm((f) => ({ ...f, jabatan: e.target.value }))} />
+          <input className="border rounded px-3 py-2" placeholder="Divisi (opsional)" value={form.divisi} onChange={(e) => setForm((f) => ({ ...f, divisi: e.target.value }))} />
+          <input className="border rounded px-3 py-2" placeholder="Asal (opsional)" value={form.asal} onChange={(e) => setForm((f) => ({ ...f, asal: e.target.value }))} />
+          <input className="border rounded px-3 py-2" type="date" placeholder="Tanggal Lahir (opsional)" value={form.tanggal_lahir} onChange={(e) => setForm((f) => ({ ...f, tanggal_lahir: e.target.value }))} />
           <div className="sm:col-span-4">
             <button type="submit" disabled={saving || isAddCodeDuplicate} className="btn btn-gold">
               {saving ? 'Menyimpan…' : 'Tambah Peserta'}
@@ -489,6 +509,10 @@ export default function ParticipantsPage() {
               <th className="text-left p-3 whitespace-nowrap hidden md:table-cell">Email</th>
               <th className="text-left p-3 whitespace-nowrap hidden md:table-cell">Telepon</th>
               <th className="text-left p-3 whitespace-nowrap hidden lg:table-cell">Jenis Kelamin</th>
+              <th className="text-left p-3 whitespace-nowrap hidden xl:table-cell">Jabatan</th>
+              <th className="text-left p-3 whitespace-nowrap hidden xl:table-cell">Divisi</th>
+              <th className="text-left p-3 whitespace-nowrap hidden 2xl:table-cell">Asal</th>
+              <th className="text-left p-3 whitespace-nowrap hidden 2xl:table-cell">Tanggal Lahir</th>
               <th className="text-left p-3 whitespace-nowrap">Kode</th>
               <th className="text-left p-3 whitespace-nowrap">Aksi</th>
             </tr>
@@ -505,6 +529,10 @@ export default function ParticipantsPage() {
                   <td className="p-3 align-middle hidden md:table-cell">{p.email || '-'}</td>
                   <td className="p-3 align-middle hidden md:table-cell">{p.phone || '-'}</td>
                   <td className="p-3 align-middle hidden lg:table-cell">{p.metadata?.gender === 'L' ? 'Laki-laki' : p.metadata?.gender === 'P' ? 'Perempuan' : '-'}</td>
+                  <td className="p-3 align-middle hidden xl:table-cell">{p.metadata?.jabatan || '-'}</td>
+                  <td className="p-3 align-middle hidden xl:table-cell">{p.metadata?.divisi || '-'}</td>
+                  <td className="p-3 align-middle hidden 2xl:table-cell">{p.metadata?.asal || '-'}</td>
+                  <td className="p-3 align-middle hidden 2xl:table-cell">{p.metadata?.tanggal_lahir || '-'}</td>
                   <td className="p-3 align-middle font-mono">{p.participant_code}</td>
                   <td className="p-3 align-middle whitespace-nowrap">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -601,6 +629,10 @@ export default function ParticipantsPage() {
                   <option value="P">Perempuan</option>
                 </select>
               </div>
+              <input className="border rounded px-3 py-2" placeholder="Jabatan (opsional)" value={editForm.jabatan} onChange={(e) => setEditForm((f) => ({ ...f, jabatan: e.target.value }))} />
+              <input className="border rounded px-3 py-2" placeholder="Divisi (opsional)" value={editForm.divisi} onChange={(e) => setEditForm((f) => ({ ...f, divisi: e.target.value }))} />
+              <input className="border rounded px-3 py-2" placeholder="Asal (opsional)" value={editForm.asal} onChange={(e) => setEditForm((f) => ({ ...f, asal: e.target.value }))} />
+              <input className="border rounded px-3 py-2" type="date" placeholder="Tanggal Lahir (opsional)" value={editForm.tanggal_lahir} onChange={(e) => setEditForm((f) => ({ ...f, tanggal_lahir: e.target.value }))} />
               <div className="sm:col-span-2 flex items-center justify-end gap-2 pt-1">
                 <button type="button" className="rounded border px-3 py-1" onClick={() => setEditing(null)}>Batal</button>
                 <button type="submit" disabled={updating || isEditCodeDuplicate} className="rounded bg-blue-600 text-white px-4 py-2 disabled:opacity-60">{updating ? 'Menyimpan…' : 'Simpan'}</button>

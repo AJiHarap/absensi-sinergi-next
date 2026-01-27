@@ -18,6 +18,7 @@ export default function AdminEventsPage() {
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ name: '', start_at: '', end_at: '' })
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -31,6 +32,24 @@ export default function AdminEventsPage() {
       setError(e.message)
     } finally {
       setLoading(false)
+    }
+
+  }
+
+  const onDelete = async (id: string, name: string) => {
+    const ok = typeof window !== 'undefined' ? window.confirm(`Yakin ingin menghapus event "${name}"? Semua data terkait (peserta, seat, kehadiran) juga akan ikut terhapus.`) : true
+    if (!ok) return
+    setDeletingId(id)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.message || 'Gagal menghapus event')
+      await load()
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -154,10 +173,18 @@ export default function AdminEventsPage() {
                     </Link>
                     <Link
                       href={`/admin/events/${ev.id}/participants`}
-                      className="btn btn-gold"
+                      className="btn btn-gold mr-2"
                     >
                       Kelola Peserta
                     </Link>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => onDelete(ev.id, ev.name)}
+                      disabled={deletingId === ev.id}
+                      title="Hapus event beserta semua data terkait"
+                    >
+                      {deletingId === ev.id ? 'Menghapus…' : 'Hapus'}
+                    </button>
                   </td>
                 </tr>
               ))

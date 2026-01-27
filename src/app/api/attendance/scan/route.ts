@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve eventId and participant by participantCode when eventId is not provided
     let resolvedEventId: string | null = body.eventId ?? null
-    let participant: { id: string; full_name: string } | null = null
+    let participant: { id: string; full_name: string; metadata?: any } | null = null
 
     if (resolvedEventId) {
       // Validate event exists and is active
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
       const { data: part, error: partErr } = await supabaseAdmin
         .from('participants')
-        .select('id, full_name')
+        .select('id, full_name, metadata')
         .eq('event_id', resolvedEventId)
         .eq('participant_code', body.participantCode)
         .maybeSingle()
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       // No eventId provided: find active event by unique participant_code
       const { data: candidates, error: candErr } = await supabaseAdmin
         .from('participants')
-        .select('id, full_name, event_id')
+        .select('id, full_name, event_id, metadata')
         .eq('participant_code', body.participantCode)
       if (candErr) throw candErr
       if (!candidates || candidates.length === 0) {
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
       const chosen = activeCandidates[0]
       resolvedEventId = chosen.event_id
-      participant = { id: chosen.id, full_name: chosen.full_name }
+      participant = { id: chosen.id, full_name: chosen.full_name, metadata: (chosen as any).metadata }
     }
 
     // 3) Get seat assignment (join)
@@ -106,6 +106,8 @@ export async function POST(req: NextRequest) {
         table_number: seatInfo?.table_number ?? null,
         seat_number: seatInfo?.seat_number ?? null,
         total_scans: countData?.length ?? undefined,
+        jabatan: (participant as any)?.metadata?.jabatan ?? null,
+        divisi: (participant as any)?.metadata?.divisi ?? null,
       },
     })
   } catch (e: any) {

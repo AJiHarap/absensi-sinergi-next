@@ -15,6 +15,8 @@ const ScanResultSchema = z.object({
       table_number: z.number().nullable(),
       seat_number: z.number().nullable(),
       total_scans: z.number().optional(),
+      jabatan: z.string().nullable().optional(),
+      divisi: z.string().nullable().optional(),
     })
     .optional(),
 })
@@ -342,6 +344,35 @@ export default function ScanPage() {
             <div className="rounded border border-green-300 bg-green-50 p-4 space-y-1">
               <div className="text-xs text-green-700">Scan berhasil</div>
               <div className="text-xl font-semibold text-green-900">{lastResult.participant_name}</div>
+              {(lastResult.jabatan || lastResult.divisi) && (
+                <div className="text-sm text-green-800">{[lastResult.jabatan, lastResult.divisi].filter(Boolean).join(' • ')}</div>
+              )}
+              {typeof lastResult.total_scans === 'number' && (
+                <div>
+                  {(() => {
+                    const n = lastResult.total_scans as number
+                    const base = 'inline-block text-[10px] uppercase border rounded px-1 py-0.5 '
+                    const classes: Record<number, string> = {
+                      1: 'bg-green-100 text-green-700 border-green-200',
+                      2: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                      3: 'bg-blue-100 text-blue-700 border-blue-200',
+                      4: 'bg-purple-100 text-purple-700 border-purple-200',
+                      5: 'bg-orange-100 text-orange-700 border-orange-200',
+                      6: 'bg-pink-100 text-pink-700 border-pink-200',
+                      7: 'bg-teal-100 text-teal-700 border-teal-200',
+                      8: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                      9: 'bg-rose-100 text-rose-700 border-rose-200',
+                      10:'bg-gray-200 text-gray-800 border-gray-300',
+                    }
+                    const cls = classes[n] || 'bg-slate-100 text-slate-700 border-slate-200'
+                    return (
+                      <span className={base + cls}>
+                        {n === 1 ? 'Pertama' : `Ke-${n}`}
+                      </span>
+                    )
+                  })()}
+                </div>
+              )}
               <div className="text-green-800">
                 Posisi duduk: meja {lastResult.table_number ?? '-'} kursi {lastResult.seat_number ?? '-'}
               </div>

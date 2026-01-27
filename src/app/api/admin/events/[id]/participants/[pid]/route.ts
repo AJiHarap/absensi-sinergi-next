@@ -8,6 +8,10 @@ const PatchSchema = z.object({
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
   gender: z.enum(['L', 'P']).nullable().optional(),
+  jabatan: z.string().nullable().optional(),
+  divisi: z.string().nullable().optional(),
+  asal: z.string().nullable().optional(),
+  tanggal_lahir: z.string().nullable().optional(),
 })
 
 export async function PATCH(req: NextRequest, context: any) {
@@ -23,8 +27,8 @@ export async function PATCH(req: NextRequest, context: any) {
     if (body.email !== undefined) updates.email = body.email
     if (body.phone !== undefined) updates.phone = body.phone
 
-    // Merge metadata.gender if provided
-    if (body.gender !== undefined) {
+    // Merge metadata fields if provided
+    if (body.gender !== undefined || body.jabatan !== undefined || body.divisi !== undefined || body.asal !== undefined || body.tanggal_lahir !== undefined) {
       const { data: existing } = await supabaseAdmin
         .from('participants')
         .select('metadata')
@@ -32,7 +36,13 @@ export async function PATCH(req: NextRequest, context: any) {
         .eq('id', pid)
         .single()
       const currentMeta = (existing?.metadata as any) || {}
-      updates.metadata = { ...currentMeta, gender: body.gender }
+      const nextMeta: any = { ...currentMeta }
+      if (body.gender !== undefined) nextMeta.gender = body.gender
+      if (body.jabatan !== undefined) nextMeta.jabatan = body.jabatan || null
+      if (body.divisi !== undefined) nextMeta.divisi = body.divisi || null
+      if (body.asal !== undefined) nextMeta.asal = body.asal || null
+      if (body.tanggal_lahir !== undefined) nextMeta.tanggal_lahir = body.tanggal_lahir || null
+      updates.metadata = nextMeta
     }
 
     const { error } = await supabaseAdmin

@@ -55,7 +55,7 @@ export default function Header() {
       <div className="container py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 min-w-0">
           <img src="/logo-sinergi.png" alt="Logo" className="h-8 w-auto object-contain" />
-          <span className="text-base sm:text-lg font-semibold truncate" style={{ color: 'var(--brand-gold)' }}>Absensi Sinergi</span>
+          {/* brand text removed as requested */}
         </Link>
 
         {/* Desktop nav */}

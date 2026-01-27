@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { z } from 'zod'
+import * as XLSX from 'xlsx'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest, context: any) {
   const { params } = (context || {}) as { params: { id: string } }
@@ -24,10 +28,18 @@ export async function GET(req: NextRequest, context: any) {
     .eq('event_id', eventId)
 
   if (q) {
-    // ILIKE for case-insensitive matching on multiple fields
-    query = query.or(
-      `full_name.ilike.%${q}%,participant_code.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`
-    ) as any
+    // Single OR across all desired fields (including metadata JSONB text fields)
+    const like = `%${q}%`
+    query = (query as any).or([
+      `full_name.ilike.${like}`,
+      `participant_code.ilike.${like}`,
+      `email.ilike.${like}`,
+      `phone.ilike.${like}`,
+      `metadata->>jabatan.ilike.${like}`,
+      `metadata->>divisi.ilike.${like}`,
+      `metadata->>asal.ilike.${like}`,
+      `metadata->>tanggal_lahir.ilike.${like}`,
+    ].join(','))
   }
 
   // Export flow (ignore pagination)
@@ -40,15 +52,23 @@ export async function GET(req: NextRequest, context: any) {
       email: r.email || '',
       phone: r.phone || '',
       gender: r.metadata?.gender || '',
+      jabatan: r.metadata?.jabatan || '',
+      divisi: r.metadata?.divisi || '',
+      asal: r.metadata?.asal || '',
+      tanggal_lahir: r.metadata?.tanggal_lahir || '',
     }))
     if (exportType === 'csv') {
-      const header = 'full_name,participant_code,email,phone,gender\n'
+      const header = 'full_name,participant_code,email,phone,gender,jabatan,divisi,asal,tanggal_lahir\n'
       const csv = header + rows.map(r => [
         JSON.stringify(r.full_name),
         JSON.stringify(r.participant_code),
         JSON.stringify(r.email),
         JSON.stringify(r.phone),
         JSON.stringify(r.gender),
+        JSON.stringify(r.jabatan),
+        JSON.stringify(r.divisi),
+        JSON.stringify(r.asal),
+        JSON.stringify(r.tanggal_lahir),
       ].join(',')).join('\n')
       return new NextResponse(csv, {
         headers: {
@@ -57,19 +77,33 @@ export async function GET(req: NextRequest, context: any) {
         },
       })
     } else {
-      const tableRows = rows.map(r => `
-        <tr>
-          <td>${escapeHtml(r.full_name)}</td>
-          <td>${escapeHtml(r.participant_code)}</td>
-          <td>${escapeHtml(r.email)}</td>
-          <td>${escapeHtml(r.phone)}</td>
-          <td>${escapeHtml(r.gender)}</td>
-        </tr>`).join('')
-      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr><th>full_name</th><th>participant_code</th><th>email</th><th>phone</th><th>gender</th></tr></thead><tbody>${tableRows}</tbody></table></body></html>`
-      return new NextResponse(html, {
+      // Build real XLSX workbook
+      const header = ['full_name','participant_code','email','phone','gender','jabatan','divisi','asal','tanggal_lahir']
+      const aoa: any[][] = [header]
+      for (const r of rows) {
+        aoa.push([r.full_name, r.participant_code, r.email, r.phone, r.gender, r.jabatan, r.divisi, r.asal, r.tanggal_lahir])
+      }
+      const ws = XLSX.utils.aoa_to_sheet(aoa)
+      // Set simple column widths
+      ;(ws as any)['!cols'] = [
+        { wch: 28 }, // full_name
+        { wch: 22 }, // code
+        { wch: 28 }, // email
+        { wch: 16 }, // phone
+        { wch: 10 }, // gender
+        { wch: 18 }, // jabatan
+        { wch: 18 }, // divisi
+        { wch: 18 }, // asal
+        { wch: 14 }, // tanggal_lahir
+      ]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Participants')
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+      return new NextResponse(buf as any, {
         headers: {
-          'Content-Type': 'application/vnd.ms-excel; charset=utf-8',
-          'Content-Disposition': `attachment; filename="participants_${eventId}.xls"`,
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="participants_${eventId}.xlsx"`,
+          'Cache-Control': 'no-store',
         },
       })
     }
@@ -91,13 +125,17 @@ const PostSchema = z.object({
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
   gender: z.enum(['L', 'P']).nullable().optional(), // L = Laki-laki, P = Perempuan
+  jabatan: z.string().nullable().optional(),
+  divisi: z.string().nullable().optional(),
+  asal: z.string().nullable().optional(),
+  tanggal_lahir: z.string().nullable().optional(),
 })
 
 export async function POST(req: NextRequest, context: any) {
   try {
     const { params } = (context || {}) as { params: { id: string } }
     const eventId = params.id
-    const { full_name, participant_code, email, phone, gender } = PostSchema.parse(await req.json())
+    const { full_name, participant_code, email, phone, gender, jabatan, divisi, asal, tanggal_lahir } = PostSchema.parse(await req.json())
 
     // Build event acronym for server-side code generation
     const { data: evt, error: evtErr } = await supabaseAdmin
@@ -137,10 +175,17 @@ export async function POST(req: NextRequest, context: any) {
       attempts++
     }
 
+    const meta: any = {}
+    if (typeof gender === 'string') meta.gender = gender
+    if (jabatan !== undefined) meta.jabatan = jabatan || null
+    if (divisi !== undefined) meta.divisi = divisi || null
+    if (asal !== undefined) meta.asal = asal || null
+    if (tanggal_lahir !== undefined) meta.tanggal_lahir = tanggal_lahir || null
+
     const { data, error } = await supabaseAdmin
       .from('participants')
       .upsert(
-        [{ event_id: eventId, full_name, participant_code: finalCode, email: email ?? null, phone: phone ?? null, metadata: gender ? { gender } : undefined }],
+        [{ event_id: eventId, full_name, participant_code: finalCode, email: email ?? null, phone: phone ?? null, metadata: Object.keys(meta).length ? meta : undefined }],
         { onConflict: 'event_id,participant_code' }
       )
       .select('id')
