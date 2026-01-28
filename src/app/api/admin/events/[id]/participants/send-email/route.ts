@@ -70,7 +70,7 @@ export async function POST(req: NextRequest, context: any) {
       const svgLabel = Buffer.from(
         `<svg width="${qW}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="#ffffff"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827">${escapeHtml(name)}</text>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="600" fill="#111827" text-rendering="optimizeLegibility">${escapeHtml(name)}</text>
         </svg>`
       )
       const labeledPng = await sharp({
