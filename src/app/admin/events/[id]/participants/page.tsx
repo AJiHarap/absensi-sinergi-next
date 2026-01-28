@@ -556,6 +556,14 @@ export default function ParticipantsPage() {
                       >
                         Unduh QR
                       </button>
+                      <a
+                        className="btn btn-dark btn-sm"
+                        href={`/api/admin/events/${eventId}/participants/${p.id}/qr`}
+                        download
+                        title="Unduh PNG QR (server) dengan nama pada gambar"
+                      >
+                        Unduh QR (Server)
+                      </a>
                       <button
                         className="btn btn-gold btn-sm"
                         disabled={sending.email && sending.pid === p.id}
