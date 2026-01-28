@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/mailer'
 import QRCode from 'qrcode'
+import sharp from 'sharp'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -55,24 +56,33 @@ export async function POST(req: NextRequest, context: any) {
       const id = (p as any).id as string
       if (!email) { errors.push({ id, message: 'No email' }); continue }
 
-      const { default: Jimp } = await import('jimp')
       const qrText = `${eventId}:${code}`
       const qrBase = await QRCode.toBuffer(qrText, { margin: 1, scale: 8 })
-      const qrImg = await Jimp.read(qrBase)
+      const meta = await sharp(qrBase).metadata()
+      const qW = meta.width || 240
+      const qH = meta.height || 240
       const pad = 16
-      const labelH = 40
-      const width = qrImg.bitmap.width + pad * 2
-      const height = qrImg.bitmap.height + pad * 2 + labelH
-      const canvas = new Jimp(width, height, 0xffffffff)
-      canvas.composite(qrImg, pad, pad)
-      const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK)
-      const displayName = (name || '').trim()
-      const textW = Jimp.measureText(font, displayName)
-      const textH = Jimp.measureTextHeight(font, displayName, width - pad * 2)
-      const tx = Math.max(pad, Math.floor((width - textW) / 2))
-      const ty = pad + qrImg.bitmap.height + Math.max(0, Math.floor((labelH - textH) / 2))
-      canvas.print(font, tx, ty, displayName, width - pad * 2)
-      const labeledPng = await canvas.getBufferAsync(Jimp.MIME_PNG)
+      const nameLen = (name || '').length
+      const fontSize = nameLen > 34 ? 14 : nameLen > 22 ? 16 : 20
+      const labelH = Math.max(40, Math.round(fontSize * 2.2))
+      const svgLabel = Buffer.from(
+        `<svg width="${qW}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="shadow"><feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#ffffff"/></filter>
+          </defs>
+          <rect width="100%" height="100%" fill="#ffffff"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827" letter-spacing="0.4" filter="url(#shadow)">${escapeHtml(name)}</text>
+        </svg>`
+      )
+      const labeledPng = await sharp({
+        create: { width: qW + pad * 2, height: qH + pad * 2 + labelH, channels: 3, background: '#ffffff' }
+      })
+        .composite([
+          { input: qrBase, left: pad, top: pad },
+          { input: svgLabel, left: pad, top: pad + qH },
+        ])
+        .png()
+        .toBuffer()
 
       const subject = `[${eventName}] QR Kehadiran Peserta`
       const year = new Date().getFullYear()
