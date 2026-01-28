@@ -63,11 +63,14 @@ export async function POST(req: NextRequest, context: any) {
       const qW = meta.width || 240
       const qH = meta.height || 240
       const pad = 16
-      const labelH = 28
+      // Larger label area to ensure visibility across email clients
+      const nameLen = (name || '').length
+      const fontSize = nameLen > 34 ? 14 : nameLen > 22 ? 16 : 20
+      const labelH = Math.max(40, Math.round(fontSize * 2.2))
       const svgLabel = Buffer.from(
         `<svg width="${qW}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="#ffffff"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#111827">${escapeHtml(name)}</text>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827">${escapeHtml(name)}</text>
         </svg>`
       )
       const labeledPng = await sharp({

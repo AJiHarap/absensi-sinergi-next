@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { supabaseClient } from '@/lib/supabase/client'
 
 export default function AdminDashboardPage() {
   const router = useRouter()
@@ -11,11 +11,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-    )
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabaseClient.auth.getSession().then(async ({ data }) => {
       if (!data.session) {
         router.replace('/admin/login')
         return
@@ -26,11 +22,7 @@ export default function AdminDashboardPage() {
   }, [router])
 
   const signOut = async () => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-    )
-    await supabase.auth.signOut()
+    await supabaseClient.auth.signOut()
     router.replace('/admin/login')
   }
 

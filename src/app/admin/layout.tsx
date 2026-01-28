@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseClient } from '@/lib/supabase/client'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -23,8 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           if (pathname !== '/admin/login') router.replace('/admin/login')
           return
         }
-        const supabase = createClient(url, anon)
-        const { data } = await supabase.auth.getSession()
+        const { data } = await supabaseClient.auth.getSession()
         if (!mounted) return
         const has = !!data.session
         setAuthed(has)
@@ -40,8 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined
     const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined
     if (!url || !anon) return () => { mounted = false }
-    const supabase = createClient(url, anon)
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_e, session) => {
       setAuthed(!!session)
       if (!session && pathname !== '/admin/login') router.replace('/admin/login')
       if (session && pathname === '/admin/login') router.replace('/admin/events')

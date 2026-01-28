@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseClient } from '@/lib/supabase/client'
 
 export default function HomePage() {
   const [hasSession, setHasSession] = useState<boolean | null>(null)
@@ -15,12 +15,11 @@ export default function HomePage() {
       setHasSession(false)
       return () => { mounted = false }
     }
-    const supabase = createClient(url, anon)
-    supabase.auth.getSession().then(({ data }) => {
+    supabaseClient.auth.getSession().then(({ data }) => {
       if (!mounted) return
       setHasSession(!!data.session)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_e, session) => {
       setHasSession(!!session)
     })
     return () => {
