@@ -153,9 +153,9 @@ function emailTemplate({ name, eventName, code, year }: { name: string; eventNam
       <tr>
         <td style="padding:8px 24px 8px 24px;text-align:center;">
           <div style="display:inline-block;border:1px solid #e5e7eb;border-radius:8px;padding:12px;background:#fff;">
-            <img src="${hQrCid}" alt="QR Kehadiran" width="260" style="display:block;border-radius:4px;" />
+            <img src="${hQrCid}" alt="QR Kehadiran - ${hName}" width="260" style="display:block;border-radius:4px;" />
+            <div style="font-size:13px;color:#111827;margin-top:8px;font-weight:600;">${hName}</div>
           </div>
-          <div style="font-size:12px;color:#6b7280;margin-top:8px;">${hName}</div>
         </td>
       </tr>
       <tr>
