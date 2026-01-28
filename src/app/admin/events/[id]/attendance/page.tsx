@@ -199,12 +199,12 @@ export default function AttendancePage() {
               <th className="text-left p-3">Meja</th>
               <th className="text-left p-3">Kursi</th>
               <th className="text-left p-3">Urutan</th>
-              <th className="text-left p-3 hidden xl:table-cell">Email</th>
-              <th className="text-left p-3 hidden xl:table-cell">Telepon</th>
-              <th className="text-left p-3 hidden 2xl:table-cell">Gender</th>
-              <th className="text-left p-3 hidden 2xl:table-cell">Jabatan</th>
-              <th className="text-left p-3 hidden 2xl:table-cell">Divisi</th>
-              <th className="text-left p-3 hidden 2xl:table-cell">Asal</th>
+              <th className="text-left p-3">Email</th>
+              <th className="text-left p-3">Telepon</th>
+              <th className="text-left p-3">Gender</th>
+              <th className="text-left p-3">Jabatan</th>
+              <th className="text-left p-3">Divisi</th>
+              <th className="text-left p-3">Asal</th>
             </tr>
           </thead>
           <tbody>
@@ -228,12 +228,12 @@ export default function AttendancePage() {
                   <td className="p-3">{r.table_number ?? '-'}</td>
                   <td className="p-3">{r.seat_number ?? '-'}</td>
                   <td className="p-3">{r.order_index ?? (r.is_first ? 1 : 2)}</td>
-                  <td className="p-3 hidden xl:table-cell">{r.email || '-'}</td>
-                  <td className="p-3 hidden xl:table-cell">{r.phone || '-'}</td>
-                  <td className="p-3 hidden 2xl:table-cell">{r.gender || '-'}</td>
-                  <td className="p-3 hidden 2xl:table-cell">{r.jabatan || '-'}</td>
-                  <td className="p-3 hidden 2xl:table-cell">{r.divisi || '-'}</td>
-                  <td className="p-3 hidden 2xl:table-cell">{r.asal || '-'}</td>
+                  <td className="p-3">{r.email || '-'}</td>
+                  <td className="p-3">{r.phone || '-'}</td>
+                  <td className="p-3">{r.gender || '-'}</td>
+                  <td className="p-3">{r.jabatan || '-'}</td>
+                  <td className="p-3">{r.divisi || '-'}</td>
+                  <td className="p-3">{r.asal || '-'}</td>
                 </tr>
               ))
             )}

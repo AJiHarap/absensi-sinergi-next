@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname } from 'next/navigation'
+import { supabaseClient } from '@/lib/supabase/client'
 
 export default function Header() {
   const [hasSession, setHasSession] = useState<boolean | null>(null)
@@ -21,13 +21,12 @@ export default function Header() {
       setHasSession(false)
       return () => { mounted = false }
     }
-    const supabase = createClient(url, anon)
-    supabase.auth.getSession().then(({ data }) => {
+    supabaseClient.auth.getSession().then(({ data }) => {
       if (!mounted) return
       setHasSession(!!data.session)
       setUserEmail(data.session?.user?.email ?? null)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabaseClient.auth.onAuthStateChange((_e, session) => {
       setHasSession(!!session)
       setUserEmail(session?.user?.email ?? null)
     })
@@ -43,8 +42,7 @@ export default function Header() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined
     const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined
     if (!url || !anon) return
-    const supabase = createClient(url, anon)
-    await supabase.auth.signOut()
+    await supabaseClient.auth.signOut()
     router.push('/')
   }
 

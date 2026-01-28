@@ -263,17 +263,18 @@ export default function ParticipantsPage() {
     setUpdating(true)
     setError(null)
     try {
-      const payload: any = {
-        full_name: editForm.full_name.trim(),
-        participant_code: editForm.participant_code.trim(),
-        email: editForm.email.trim() || null,
-        phone: editForm.phone.trim() || null,
-        gender: editForm.gender || null,
-        jabatan: editForm.jabatan.trim() || null,
-        divisi: editForm.divisi.trim() || null,
-        asal: editForm.asal.trim() || null,
-        tanggal_lahir: editForm.tanggal_lahir.trim() || null,
-      }
+      const payload: any = {}
+      const nameTrim = editForm.full_name.trim()
+      const codeTrim = editForm.participant_code.trim()
+      if (nameTrim) payload.full_name = nameTrim
+      if (codeTrim) payload.participant_code = codeTrim
+      payload.email = editForm.email.trim() || null
+      payload.phone = editForm.phone.trim() || null
+      payload.gender = editForm.gender || null
+      payload.jabatan = editForm.jabatan.trim() || null
+      payload.divisi = editForm.divisi.trim() || null
+      payload.asal = editForm.asal.trim() || null
+      payload.tanggal_lahir = editForm.tanggal_lahir.trim() || null
       const res = await fetch(`/api/admin/events/${eventId}/participants/${editing.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -506,13 +507,13 @@ export default function ParticipantsPage() {
           <thead className="bg-gray-50 text-gray-600">
             <tr>
               <th className="text-left p-3 whitespace-nowrap">Nama</th>
-              <th className="text-left p-3 whitespace-nowrap hidden md:table-cell">Email</th>
-              <th className="text-left p-3 whitespace-nowrap hidden md:table-cell">Telepon</th>
-              <th className="text-left p-3 whitespace-nowrap hidden lg:table-cell">Jenis Kelamin</th>
-              <th className="text-left p-3 whitespace-nowrap hidden xl:table-cell">Jabatan</th>
-              <th className="text-left p-3 whitespace-nowrap hidden xl:table-cell">Divisi</th>
-              <th className="text-left p-3 whitespace-nowrap hidden 2xl:table-cell">Asal</th>
-              <th className="text-left p-3 whitespace-nowrap hidden 2xl:table-cell">Tanggal Lahir</th>
+              <th className="text-left p-3 whitespace-nowrap">Email</th>
+              <th className="text-left p-3 whitespace-nowrap">Telepon</th>
+              <th className="text-left p-3 whitespace-nowrap">Jenis Kelamin</th>
+              <th className="text-left p-3 whitespace-nowrap">Jabatan</th>
+              <th className="text-left p-3 whitespace-nowrap">Divisi</th>
+              <th className="text-left p-3 whitespace-nowrap">Asal</th>
+              <th className="text-left p-3 whitespace-nowrap">Tanggal Lahir</th>
               <th className="text-left p-3 whitespace-nowrap">Kode</th>
               <th className="text-left p-3 whitespace-nowrap">Aksi</th>
             </tr>
@@ -526,13 +527,13 @@ export default function ParticipantsPage() {
               data.map((p) => (
                 <tr key={p.id} className="border-t">
                   <td className="p-3 align-middle">{p.full_name}</td>
-                  <td className="p-3 align-middle hidden md:table-cell">{p.email || '-'}</td>
-                  <td className="p-3 align-middle hidden md:table-cell">{p.phone || '-'}</td>
-                  <td className="p-3 align-middle hidden lg:table-cell">{p.metadata?.gender === 'L' ? 'Laki-laki' : p.metadata?.gender === 'P' ? 'Perempuan' : '-'}</td>
-                  <td className="p-3 align-middle hidden xl:table-cell">{p.metadata?.jabatan || '-'}</td>
-                  <td className="p-3 align-middle hidden xl:table-cell">{p.metadata?.divisi || '-'}</td>
-                  <td className="p-3 align-middle hidden 2xl:table-cell">{p.metadata?.asal || '-'}</td>
-                  <td className="p-3 align-middle hidden 2xl:table-cell">{p.metadata?.tanggal_lahir || '-'}</td>
+                  <td className="p-3 align-middle">{p.email || '-'}</td>
+                  <td className="p-3 align-middle">{p.phone || '-'}</td>
+                  <td className="p-3 align-middle">{p.metadata?.gender === 'L' ? 'Laki-laki' : p.metadata?.gender === 'P' ? 'Perempuan' : '-'}</td>
+                  <td className="p-3 align-middle">{p.metadata?.jabatan || '-'}</td>
+                  <td className="p-3 align-middle">{p.metadata?.divisi || '-'}</td>
+                  <td className="p-3 align-middle">{p.metadata?.asal || '-'}</td>
+                  <td className="p-3 align-middle">{p.metadata?.tanggal_lahir || '-'}</td>
                   <td className="p-3 align-middle font-mono">{p.participant_code}</td>
                   <td className="p-3 align-middle whitespace-nowrap">
                     <div className="flex items-center gap-2 flex-wrap">
