@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/mailer'
+import { gmailRateLimiter } from '@/lib/rate-limiter'
 import QRCode from 'qrcode'
 import sharp from 'sharp'
 
@@ -48,46 +49,77 @@ export async function POST(req: NextRequest, context: any) {
 
     let success = 0
     const errors: { id: string; message: string }[] = []
+    const total = participants?.length || 0
 
-    for (const p of participants || []) {
-      const email = (p as any).email as string | null
+    // Check rate limits before starting
+    const stats = gmailRateLimiter.getStats()
+    console.log(`📊 Rate Limiter Stats: ${stats.sentToday}/day used (${stats.dailyRemaining} remaining)`)
+    console.log(`📧 Starting bulk email send for ${total} participants in event: ${eventName}`)
+    console.log(`⏰ Started at: ${new Date().toLocaleString('id-ID')}`)
+
+    for (let i = 0; i < (participants || []).length; i++) {
+      const p = (participants || [])[i]
+      let email = (p as any).email as string | null
       const name = (p as any).full_name as string
       const code = (p as any).participant_code as string
       const id = (p as any).id as string
-      if (!email) { errors.push({ id, message: 'No email' }); continue }
+      
+      // Fix email parsing - extract email from malformed data
+      if (email && typeof email === 'string' && email.includes(';;')) {
+        const emailMatch = email.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)
+        if (emailMatch) {
+          email = emailMatch[1]
+          console.log(`🔧 Fixed email parsing: ${email}`)
+        }
+      }
+      
+      const progress = Math.round(((i + 1) / total) * 100)
+      console.log(`🔄 [${progress}%] Processing ${i + 1}/${total}: ${name} (${email})`)
+      
+      if (!email || email === 'null' || email.trim() === '') { 
+        console.log(`⚠️ Skipping ${name} - no valid email address`)
+        errors.push({ id, message: 'No valid email' }); 
+        continue 
+      }
 
-      const qrText = `${eventId}:${code}`
-      const qrBase = await QRCode.toBuffer(qrText, { margin: 1, scale: 8 })
-      const meta = await sharp(qrBase).metadata()
-      const qW = meta.width || 240
-      const qH = meta.height || 240
-      const pad = 16
-      const nameLen = (name || '').length
-      const fontSize = nameLen > 34 ? 14 : nameLen > 22 ? 16 : 20
-      const labelH = Math.max(40, Math.round(fontSize * 2.2))
-      const svgLabel = Buffer.from(
-        `<svg width="${qW}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="shadow"><feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#ffffff"/></filter>
-          </defs>
-          <rect width="100%" height="100%" fill="#ffffff"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827" letter-spacing="0.4" filter="url(#shadow)">${escapeHtml(name)}</text>
-        </svg>`
-      )
-      const labeledPng = await sharp({
-        create: { width: qW + pad * 2, height: qH + pad * 2 + labelH, channels: 3, background: '#ffffff' }
-      })
-        .composite([
-          { input: qrBase, left: pad, top: pad },
-          { input: svgLabel, left: pad, top: pad + qH },
-        ])
-        .png()
-        .toBuffer()
-
-      const subject = `[${eventName}] QR Kehadiran Peserta`
-      const year = new Date().getFullYear()
-      const html = emailTemplate({ name, eventName, code, year })
       try {
+        // Check rate limit before sending
+        await gmailRateLimiter.waitForSlot()
+        
+        const startTime = Date.now()
+        
+        const qrText = `${eventId}:${code}`
+        const qrBase = await QRCode.toBuffer(qrText, { margin: 1, scale: 8 })
+        const meta = await sharp(qrBase).metadata()
+        const qW = meta.width || 240
+        const qH = meta.height || 240
+        const pad = 16
+        const nameLen = (name || '').length
+        const fontSize = nameLen > 34 ? 14 : nameLen > 22 ? 16 : 20
+        const labelH = Math.max(40, Math.round(fontSize * 2.2))
+        const svgLabel = Buffer.from(
+          `<svg width="${qW}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow"><feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#ffffff"/></filter>
+            </defs>
+            <rect width="100%" height="100%" fill="#ffffff"/>
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, Helvetica, Liberation Sans, DejaVu Sans, sans-serif" font-size="${fontSize}" font-weight="700" fill="#111827" letter-spacing="0.4" filter="url(#shadow)">${escapeHtml(name)}</text>
+          </svg>`
+        )
+        const labeledPng = await sharp({
+          create: { width: qW + pad * 2, height: qH + pad * 2 + labelH, channels: 3, background: '#ffffff' }
+        })
+          .composite([
+            { input: qrBase, left: pad, top: pad },
+            { input: svgLabel, left: pad, top: pad + qH },
+          ])
+          .png()
+          .toBuffer()
+
+        const subject = `[${eventName}] QR Kehadiran Peserta`
+        const year = new Date().getFullYear()
+        const html = emailTemplate({ name, eventName, code, year })
+        
         await sendEmail({
           to: email,
           subject,
@@ -99,11 +131,41 @@ export async function POST(req: NextRequest, context: any) {
             { filename: `${safeFile(name)} (${safeFile(code)}).png`, content: labeledPng, contentType: 'image/png', contentDisposition: 'attachment' },
           ],
         })
+        
+        // Record successful send
+        gmailRateLimiter.recordSent()
+        
+        const sendTime = Date.now() - startTime
+        const currentStats = gmailRateLimiter.getStats()
+        console.log(`✅ [${progress}%] Sent to ${name} (${email}) - ${sendTime}ms (${currentStats.sentToday}/day)`)
         success++
       } catch (e: any) {
-        errors.push({ id, message: e?.message || 'send error' })
+        const errorMsg = e?.message || 'send error'
+        
+        // Check if it's a rate limit error
+        if (errorMsg.includes('limit exceeded') || errorMsg.includes('Daily user sending limit exceeded')) {
+          console.log(`🚨 [${progress}%] Gmail limit reached for ${name} (${email}): ${errorMsg}`)
+          console.log(`⏸️ Pausing email sending due to Gmail limits`)
+          console.log(`💡 Try again in 24 hours or use a different email service`)
+          
+          // Add special error for rate limit
+          errors.push({ id, message: `GMAIL_LIMIT: ${errorMsg}` })
+          
+          // Break the loop to avoid more failures
+          break
+        } else {
+          console.log(`❌ [${progress}%] Failed to send to ${name} (${email}): ${errorMsg}`)
+          errors.push({ id, message: errorMsg })
+        }
       }
     }
+
+    const totalStartTime = Date.now()
+    console.log(`📊 Email sending completed!`)
+    console.log(`✅ Success: ${success}/${total}`)
+    console.log(`❌ Failed: ${errors.length}/${total}`)
+    console.log(`⏱️ Total time: ${((Date.now() - totalStartTime) / 1000).toFixed(2)} seconds`)
+    console.log(`🚀 Average: ${((Date.now() - totalStartTime) / total).toFixed(0)}ms per email`)
 
     return NextResponse.json({ ok: true, data: { success, failed: errors.length, errors } })
   } catch (e: any) {
